@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>4.4</version>
+    <date>2020-12-03T13:03:48Z</date>
+    <groups>
+        <group>
+            <name>Ambari</name>
+        </group>
+    </groups>
+    <templates>
+        <template>
+            <template>Ambari Alerts HTTP</template>
+            <name>Ambari Alerts HTTP</name>
+            <description>Autodiscovery ambari alerts HTTP</description>
+            <groups>
+                <group>
+                    <name>Ambari</name>
+                </group>
+            </groups>
+            <applications>
+                <application>
+                    <name>Ambari</name>
+                </application>
+            </applications>
+            <discovery_rules>
+                <discovery_rule>
+                    <name>Ambari alert</name>
+                    <type>HTTP_AGENT</type>
+                    <key>ambari.alerts.discovery</key>
+                    <delay>300</delay>
+                    <authtype>BASIC</authtype>
+                    <username>{$AMB_USER}</username>
+                    <password>{$AMB_PASS}</password>
+                    <lifetime>1d</lifetime>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>{#AMAL_NAME} {#AMAL_HOSTNAME}</name>
+                            <type>HTTP_AGENT</type>
+                            <key>ambari.alert[{#AMAL_NAME}{#AMAL_HOSTNAME}]</key>
+                            <delay>60</delay>
+                            <history>7d</history>
+                            <authtype>BASIC</authtype>
+                            <username>{$AMB_USER}</username>
+                            <password>{$AMB_PASS}</password>
+                            <applications>
+                                <application>
+                                    <name>Ambari</name>
+                                </application>
+                            </applications>
+                            <valuemap>
+                                <name>Amabari Alerts</name>
+                            </valuemap>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.Alert.state</params>
+                                </step>
+                                <step>
+                                    <type>JAVASCRIPT</type>
+                                    <params>if (value == &quot;OK&quot;)
+	return 0
+else if (value == &quot;CRITICAL&quot;)
+	return 1
+else if (value == &quot;WARNING&quot;)
+	return 2
+else if (value == &quot;MAINTENANCE&quot;)
+	return 3
+else
+	return 4</params>
+                                </step>
+                            </preprocessing>
+                            <timeout>5s</timeout>
+                            <url>{#AMAL_URL}</url>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <expression>{last()}=1</expression>
+                                    <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                                    <recovery_expression>{last(#2)}=0</recovery_expression>
+                                    <name>CRITICAL {#AMAL_NAME}  Hostname {#AMAL_HOSTNAME}</name>
+                                    <priority>HIGH</priority>
+                                </trigger_prototype>
+                                <trigger_prototype>
+                                    <expression>{last()}=2</expression>
+                                    <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                                    <recovery_expression>{last(#2)}=0</recovery_expression>
+                                    <name>WARNING {#AMAL_NAME} Hostname {#AMAL_HOSTNAME}</name>
+                                    <priority>AVERAGE</priority>
+                                </trigger_prototype>
+                                <trigger_prototype>
+                                    <expression>{last()}=3</expression>
+                                    <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                                    <recovery_expression>{last(#2)}=0</recovery_expression>
+                                    <name>{#AMAL_NAME} Hostname {#AMAL_HOSTNAME} is in MAINTENANCE</name>
+                                    <priority>INFO</priority>
+                                </trigger_prototype>
+                                <trigger_prototype>
+                                    <expression>{last()}=4</expression>
+                                    <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                                    <recovery_expression>{last(#2)}=0</recovery_expression>
+                                    <name>{#AMAL_NAME} Hostname {#AMAL_HOSTNAME} is in UNKNOWN</name>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                    </item_prototypes>
+                    <url>{$AMB_URL}/api/v1/clusters/bigdataserver/alerts</url>
+                    <lld_macro_paths>
+                        <lld_macro_path>
+                            <lld_macro>{#AMAL_HOSTNAME}</lld_macro>
+                            <path>$.Alert.host_name</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#AMAL_ID}</lld_macro>
+                            <path>$.Alert.id</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#AMAL_NAME}</lld_macro>
+                            <path>$.Alert.definition_name</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#AMAL_SVC}</lld_macro>
+                            <path>$.Alert.service_name</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#AMAL_URL}</lld_macro>
+                            <path>$.href</path>
+                        </lld_macro_path>
+                    </lld_macro_paths>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.items</params>
+                        </step>
+                    </preprocessing>
+                </discovery_rule>
+            </discovery_rules>
+            <macros>
+                <macro>
+                    <macro>{$AMB_PASS}</macro>
+                    <value>your password</value>
+                    <description>Ambari password</description>
+                </macro>
+                <macro>
+                    <macro>{$AMB_URL}</macro>
+                    <value>http://&lt;your hostname&gt;:8080</value>
+                    <description>url of your ambari access</description>
+                </macro>
+                <macro>
+                    <macro>{$AMB_USER}</macro>
+                    <value>your username</value>
+                    <description>ambari user</description>
+                </macro>
+            </macros>
+        </template>
+    </templates>
+    <value_maps>
+        <value_map>
+            <name>Amabari Alerts</name>
+            <mappings>
+                <mapping>
+                    <value>0</value>
+                    <newvalue>OK</newvalue>
+                </mapping>
+                <mapping>
+                    <value>1</value>
+                    <newvalue>CRITICAL</newvalue>
+                </mapping>
+                <mapping>
+                    <value>2</value>
+                    <newvalue>WARNING</newvalue>
+                </mapping>
+                <mapping>
+                    <value>3</value>
+                    <newvalue>MAINTENANCE</newvalue>
+                </mapping>
+                <mapping>
+                    <value>4</value>
+                    <newvalue>UNKNOWN</newvalue>
+                </mapping>
+            </mappings>
+        </value_map>
+    </value_maps>
+</zabbix_export>
